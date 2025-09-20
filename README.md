@@ -14,7 +14,7 @@ npm start
 
 Abra no navegador:
 
-Faça login com qualquer email/senha (sem autenticação real neste demo). Em seguida informe a URL do Webhook do n8n quando solicitado.
+Faça login com qualquer email/senha (sem autenticação real neste demo). O webhook do n8n é lido do arquivo `.env`; não é necessário colar a URL no login.
 
 ## Integração com n8n
 Ao enviar uma mensagem no chat, o frontend chama `POST /api/sendMessage` e o servidor encaminha um JSON ao seu Webhook do n8n.
@@ -64,7 +64,35 @@ O payload enviado segue o formato do exemplo (simplificado) – o texto da mensa
 ```
 
 Observações:
+- O texto digitado no chat vai em `body.data.message.conversation` e `messageType` é `conversation`.
+- `remoteJid` foi fixado como `site` (exigência do seu fluxo no n8n).
+- O n8n pode responder como objeto `{ output: "..." }`, `{ answer: "..." }`, array `[ { output } ]` ou texto. O backend normaliza e devolve ao frontend uma string em `message`.
+- O frontend exibe o texto entre parênteses e preserva quebras de linha.
 
 ## Onde editar
 
-## Próximos passos (sugestões)
+- `.env`
+  - `N8N_WEBHOOK_URL` → URL do webhook do n8n (fixo)
+  - `PORT` → porta do servidor local
+
+- `server.js`
+  - Servidor Express, serve estáticos e implementa:
+    - `GET /api/config` (expõe a URL do webhook ao frontend)
+    - `POST /api/sendMessage` (monta o payload e envia ao n8n)
+  - Função `buildWebhookPayload(...)` → onde está o `remoteJid: 'site'`, `message.conversation` etc.
+  - Normalização da resposta do n8n → converte para `{ message: <texto> }` antes de retornar ao frontend.
+
+- `public/index.html`
+  - Layout das telas (Login e Chat) e estilos principais. O chat já preserva quebras de linha.
+
+- `public/main.js`
+  - Navegação Login → Chat, envio de mensagens e exibição das respostas.
+  - Busca a configuração do webhook em `/api/config`.
+  - Extrai o texto do retorno (`json.message` → `data.output/answer` → array) e formata entre parênteses.
+
+- `public/styles.css`
+  - Espaço para estilos adicionais (opcional; a base está no HTML).
+
+- `package.json`
+  - Scripts (`npm start`) e dependências.
+a
